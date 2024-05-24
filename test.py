@@ -6,7 +6,6 @@ from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLa
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 from PyQt5.QtWidgets import QFrame
 from PyQt5.QtCore import Qt
@@ -50,6 +49,18 @@ def password_generator(length, include_special_chars):
     return password
 
 
+def wallet_generator(length, include_special_chars, crypto_option):
+    if include_special_chars:
+        characters = string.ascii_letters + string.digits + string.punctuation
+    else:
+        characters = string.ascii_letters + string.digits
+
+    random_string = ''.join(random.choice(characters) for _ in range(length))
+    wallet = crypto_option + random_string
+
+    return wallet
+
+
 def register_user(driver, username, password_length=12, include_special_chars=True):
     driver.get("http://127.0.0.1:8000/register/")
     time.sleep(1)
@@ -80,13 +91,12 @@ def register_user(driver, username, password_length=12, include_special_chars=Tr
 def account_logOut(driver):
     headerEmail = driver.find_element(By.XPATH, '/html/body/header/div/div/div/button')
     actions = ActionChains(driver)
-    #kursor na headerEmail
+    # kursor na headerEmail
     actions.move_to_element(headerEmail).perform()
 
     time.sleep(1)
     logOutButton = driver.find_element(By.XPATH, '/html/body/header/div/div/div/div/a[2]')
     logOutButton.click()
-
 
 
 def account_login(driver, Account):
@@ -107,12 +117,98 @@ def account_login(driver, Account):
         login_button.click()
 
 
-def create_exchange_order(driver):
+def create_exchange_order(driver, wallet_length, special_chars_in_wallet,  crypto_from, crypto_to, agreement):
     driver.get("http://localhost:8000/create_exchange_order/")
     time.sleep(1)
     email_field = driver.find_element(By.XPATH, '//*[@id="id_email"]')
     email = email_generator()
     email_field.send_keys(email)
+
+    crypto_from_xpath = " "
+
+    if crypto_from == "BTC":
+        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[1]'
+    elif crypto_from == "ETH":
+        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[2]'
+    elif crypto_from == "XMR":
+        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[3]'
+    elif crypto_from == "DAI":
+        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[4]'
+    elif crypto_from == "BNB":
+        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[5]'
+    elif crypto_from == "USDT":
+        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[6]'
+    elif crypto_from == "LTC":
+        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[7]'
+    elif crypto_from == "XLM":
+        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[8]'
+    elif crypto_from == "ADA":
+        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[9]'
+    elif crypto_from == "XRP":
+        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[10]'
+
+
+    time.sleep(0.5)
+    crypto_from_field = driver.find_element(By.XPATH, crypto_from_xpath)
+    crypto_from_field.click()
+
+    amount_field = driver.find_element(By.XPATH, '//*[@id="id_amount"]')
+    amount_field.send_keys(random.randint(10, 100))
+    time.sleep(0.5)
+
+    crypto_to_xpath = " "
+
+    if crypto_to == "BTC":
+        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[1]'
+    elif crypto_to == "ETH":
+        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[2]'
+    elif crypto_to == "XMR":
+        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[3]'
+    elif crypto_to == "DAI":
+        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[4]'
+    elif crypto_to == "BNB":
+        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[5]'
+    elif crypto_to == "USDT":
+        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[6]'
+    elif crypto_to == "LTC":
+        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[7]'
+    elif crypto_to == "XLM":
+        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[8]'
+    elif crypto_to == "ADA":
+        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[9]'
+    elif crypto_to == "XRP":
+        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[10]'
+
+    crypto_to_field = driver.find_element(By.XPATH, crypto_to_xpath)
+    crypto_to_field.click()
+    time.sleep(0.5)
+
+
+    wallet = wallet_generator(wallet_length, special_chars_in_wallet, crypto_to)
+
+
+    wallet_field = driver.find_element(By.XPATH, '//*[@id="id_recipient_wallet"]')
+    wallet_field.send_keys(wallet)
+    time.sleep(0.5)
+
+
+    if agreement:
+        agreement_field = driver.find_element(By.XPATH, '//*[@id="agreementCheckbox"]')
+        agreement_field.click()
+        time.sleep(0.5)
+
+
+    exchange_now_button = driver.find_element(By.XPATH, '//*[@id="submitBtn"]')
+    exchange_now_button.click()
+
+
+
+def i_payed_button(driver):
+    pass
+
+def cancel_order_button(driver):
+    pass
+
 
 
 
@@ -124,7 +220,7 @@ class SeleniumTestGUI(QWidget):
 
     def initUI(self):
         self.setWindowTitle('Selenium Test GUI')
-        self.setGeometry(100, 100, 500, 250)
+        self.setGeometry(100, 100, 600, 300)
 
         mainLayout = QVBoxLayout()
         self.setStyleSheet("background-color: #E0F7FA;")
@@ -148,7 +244,7 @@ class SeleniumTestGUI(QWidget):
         self.startBrowserButton.clicked.connect(self.startBrowser)
         mainLayout.addWidget(self.startBrowserButton)
 
-        # Separator line ---------------------------
+        #Separator line ---------------------------
         hLine = QFrame()
         hLine.setFrameShape(QFrame.HLine)
         hLine.setStyleSheet("border: 2px solid #B2EBF2;")
@@ -159,30 +255,51 @@ class SeleniumTestGUI(QWidget):
         browserTitleLabel.setAlignment(Qt.AlignCenter)
         mainLayout.addWidget(browserTitleLabel)
 
-        testCaseLayout = QHBoxLayout()
+        # Registration Test Case
+        registrationLayout = QHBoxLayout()
         self.testCaseLabel = QLabel('Choose Registration Test Case:')
-        testCaseLayout.addWidget(self.testCaseLabel)
+        registrationLayout.addWidget(self.testCaseLabel)
         self.testCaseCombo = QComboBox()
         self.testCaseCombo.addItems(
             ['Short Password', 'Simple Password', 'Already Used Username', 'Username Similar to Password', 'Good Case'])
-        testCaseLayout.addWidget(self.testCaseCombo)
-        mainLayout.addLayout(testCaseLayout)
+        registrationLayout.addWidget(self.testCaseCombo)
 
-        loginCaseLayout = QHBoxLayout()
+        self.registerButton = QPushButton('Run Registration Test')
+        self.registerButton.clicked.connect(self.handleRegistration)
+        registrationLayout.addWidget(self.registerButton)
+
+        mainLayout.addLayout(registrationLayout)
+
+        #Login Test Case
+        loginLayout = QHBoxLayout()
         self.loginCaseLabel = QLabel('Choose Login Test Case:')
-        loginCaseLayout.addWidget(self.loginCaseLabel)
+        loginLayout.addWidget(self.loginCaseLabel)
         self.loginCaseCombo = QComboBox()
         self.loginCaseCombo.addItems(['Good Case', 'Incorrect Login/Pass'])
-        loginCaseLayout.addWidget(self.loginCaseCombo)
-        mainLayout.addLayout(loginCaseLayout)
+        loginLayout.addWidget(self.loginCaseCombo)
 
-        orderCaseLayout = QHBoxLayout()
+        self.loginButton = QPushButton('Run Login Test')
+        self.loginButton.clicked.connect(self.handleLogin)
+        loginLayout.addWidget(self.loginButton)
+
+        mainLayout.addLayout(loginLayout)
+
+        #Create Order Test Case
+        orderLayout = QHBoxLayout()
         self.orderCaseLabel = QLabel('Choose Create Order Test Case:')
-        orderCaseLayout.addWidget(self.orderCaseLabel)
+        orderLayout.addWidget(self.orderCaseLabel)
         self.orderCaseCombo = QComboBox()
-        self.orderCaseCombo.addItems(['Good Case', 'Incorrect Wallet Address'])
-        orderCaseLayout.addWidget(self.orderCaseCombo)
-        mainLayout.addLayout(orderCaseLayout)
+        self.orderCaseCombo.addItems(['Good Case', 'Incorrect Wallet Address',
+                                      'Too Short Wallet Address',
+                                      'Crypto From & Crypto To is same',
+                                      'User agreement not confirmed'])
+        orderLayout.addWidget(self.orderCaseCombo)
+
+        self.createOrderButton = QPushButton('Run Create Order Test')
+        self.createOrderButton.clicked.connect(self.handleCreateOrder)
+        orderLayout.addWidget(self.createOrderButton)
+
+        mainLayout.addLayout(orderLayout)
 
         # Separator line ---------------------------
         hLine = QFrame()
@@ -195,23 +312,22 @@ class SeleniumTestGUI(QWidget):
         browserTitleLabel.setAlignment(Qt.AlignCenter)
         mainLayout.addWidget(browserTitleLabel)
 
-        self.registerButton = QPushButton('Run Registration Test')
-        self.registerButton.clicked.connect(self.handleRegistration)
-        mainLayout.addWidget(self.registerButton)
-
-        self.loginButton = QPushButton('Run Login Test')
-        self.loginButton.clicked.connect(self.handleLogin)
-        mainLayout.addWidget(self.loginButton)
-
-        self.createOrderButton = QPushButton('Run Create Order Test')
-        self.createOrderButton.clicked.connect(self.handleCreateOrder)
-        mainLayout.addWidget(self.createOrderButton)
-
         self.logOutButton = QPushButton('Log Out')
         self.logOutButton.clicked.connect(self.logOut)
         mainLayout.addWidget(self.logOutButton)
 
+        # self.iPayedButton = QPushButton('I paid')
+        # self.iPayedButton.clicked.connect(self)
+        # mainLayout.addWidget(self.iPayedButton)
+
         self.setLayout(mainLayout)
+
+
+
+
+
+
+
 
     def startBrowser(self):
         browser_choice = self.browserCombo.currentText()
@@ -268,7 +384,13 @@ class SeleniumTestGUI(QWidget):
         if create_order_case == 'Good Case':
             self.createOrderGoodCase()
         elif create_order_case == 'Incorrect Wallet Address':
-            self.createOrderIncorrectWallet()
+            self.include_special_chars()
+        elif create_order_case == 'Too Short Wallet Address':
+            self.too_short_wallet()
+        elif create_order_case == "Crypto From & Crypto To is same":
+            self.create_orderCase4()
+        elif create_order_case == "User agreement not confirmed":
+            self.create_orderCase5()
 
     def testShortPassword(self):
         username = username_generator()
@@ -293,7 +415,7 @@ class SeleniumTestGUI(QWidget):
     def goodCaseLogin(self):
         time.sleep(1)
         Account = {self.username: self.password}
-        #print(Account)
+        # print(Account)
         account_login(self.driver, Account)
 
     def incorrectLogin(self):
@@ -302,17 +424,27 @@ class SeleniumTestGUI(QWidget):
         account_login(self.driver, Account)
 
     def createOrderGoodCase(self):
-        time.sleep(1)
-        create_exchange_order(self.driver)
+        create_exchange_order(self.driver, 17, False, "BTC", "USDT", True)
 
-    def createOrderIncorrectWallet(self):
-        pass
+        #wallet bad cases
+    def include_special_chars(self):
+        create_exchange_order(self.driver, 17, True, "BTC", "USDT", True)
+
+    def too_short_wallet(self):
+        create_exchange_order(self.driver, 8, True, "BTC", "USDT", True)
+
+        #crypro_to is same to crypto_from
+    def create_orderCase4(self):
+        create_exchange_order(self.driver, 17, False, "USDT", "USDT", True)
+
+
+    def create_orderCase5(self):
+        create_exchange_order(self.driver, 17, False, "XMR", "USDT", False)
 
 
 
 
 
-        
 
 
 if __name__ == '__main__':
