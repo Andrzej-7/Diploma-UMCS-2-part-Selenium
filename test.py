@@ -99,6 +99,26 @@ def account_logOut(driver):
     logOutButton.click()
 
 
+
+
+def go_to_main_page(driver):
+    #mainpageElement = driver.find_element(By.XPATH, '')
+    driver.get("http://127.0.0.1:8000")
+
+
+
+def cancel_order(driver):
+    cancel_order_button = driver.find_element(By.XPATH, '/html/body/div/div[2]/form/div/a')
+    cancel_order_button.click()
+
+
+def i_payed_order(driver):
+    i_payed_order_button = driver.find_element(By.XPATH, '//*[@id="processOrderButton"]')
+    i_payed_order_button.click()
+
+
+
+
 def account_login(driver, Account):
     for username, password in Account.items():
         login_header_button = driver.find_element(By.XPATH, '//*[@id="login-button"]')
@@ -203,13 +223,6 @@ def create_exchange_order(driver, wallet_length, special_chars_in_wallet,  crypt
 
 
 
-def i_payed_button(driver):
-    pass
-
-def cancel_order_button(driver):
-    pass
-
-
 
 
 class SeleniumTestGUI(QWidget):
@@ -240,7 +253,7 @@ class SeleniumTestGUI(QWidget):
         mainLayout.addLayout(browserLayout)
 
         self.startBrowserButton = QPushButton('Start Browser')
-        self.startBrowserButton.setStyleSheet("background-color: #B2EBF2; padding: 5px;")
+        self.startBrowserButton.setStyleSheet("background-color: #cef1f8; padding: 5px;")
         self.startBrowserButton.clicked.connect(self.startBrowser)
         mainLayout.addWidget(self.startBrowserButton)
 
@@ -255,7 +268,7 @@ class SeleniumTestGUI(QWidget):
         browserTitleLabel.setAlignment(Qt.AlignCenter)
         mainLayout.addWidget(browserTitleLabel)
 
-        # Registration Test Case
+        #Registration Test Case
         registrationLayout = QHBoxLayout()
         self.testCaseLabel = QLabel('Choose Registration Test Case:')
         registrationLayout.addWidget(self.testCaseLabel)
@@ -265,6 +278,7 @@ class SeleniumTestGUI(QWidget):
         registrationLayout.addWidget(self.testCaseCombo)
 
         self.registerButton = QPushButton('Run Registration Test')
+        self.registerButton.setStyleSheet("background-color:#cef1f8; padding: 5px;")
         self.registerButton.clicked.connect(self.handleRegistration)
         registrationLayout.addWidget(self.registerButton)
 
@@ -279,6 +293,7 @@ class SeleniumTestGUI(QWidget):
         loginLayout.addWidget(self.loginCaseCombo)
 
         self.loginButton = QPushButton('Run Login Test')
+        self.loginButton.setStyleSheet("background-color: #cef1f8; padding: 5px;")
         self.loginButton.clicked.connect(self.handleLogin)
         loginLayout.addWidget(self.loginButton)
 
@@ -296,6 +311,7 @@ class SeleniumTestGUI(QWidget):
         orderLayout.addWidget(self.orderCaseCombo)
 
         self.createOrderButton = QPushButton('Run Create Order Test')
+        self.createOrderButton.setStyleSheet("background-color: #cef1f8; padding: 5px;")
         self.createOrderButton.clicked.connect(self.handleCreateOrder)
         orderLayout.addWidget(self.createOrderButton)
 
@@ -313,12 +329,24 @@ class SeleniumTestGUI(QWidget):
         mainLayout.addWidget(browserTitleLabel)
 
         self.logOutButton = QPushButton('Log Out')
+        self.logOutButton.setStyleSheet("background-color: #cef1f8; padding: 5px;")
         self.logOutButton.clicked.connect(self.logOut)
         mainLayout.addWidget(self.logOutButton)
 
-        # self.iPayedButton = QPushButton('I paid')
-        # self.iPayedButton.clicked.connect(self)
-        # mainLayout.addWidget(self.iPayedButton)
+        self.iPayedButton = QPushButton('I Payed')
+        self.iPayedButton.setStyleSheet("background-color: #cef1f8; padding: 5px;")
+        self.iPayedButton.clicked.connect(self.iPayed)
+        mainLayout.addWidget(self.iPayedButton)
+
+        self.cancelOrderButton = QPushButton('Cancel Order')
+        self.cancelOrderButton.setStyleSheet("background-color: #cef1f8; padding: 5px;")
+        self.cancelOrderButton.clicked.connect(self.cancelOrder)
+        mainLayout.addWidget(self.cancelOrderButton)
+
+        self.mainPageButton = QPushButton('Main Page')
+        self.mainPageButton.setStyleSheet("background-color: #cef1f8; padding: 5px;")
+        self.mainPageButton.clicked.connect(self.mainPage)
+        mainLayout.addWidget(self.mainPageButton)
 
         self.setLayout(mainLayout)
 
@@ -347,6 +375,19 @@ class SeleniumTestGUI(QWidget):
                 account_logOut(self.driver)
             except Exception as e:
                 QMessageBox.warning(self, 'Error', 'Log Out Failed: ' + str(e))
+
+
+    def iPayed(self):
+        i_payed_order(self.driver)
+
+
+    def cancelOrder(self):
+        cancel_order(self.driver)
+
+
+    def mainPage(self):
+        go_to_main_page(self.driver)
+
 
     def handleRegistration(self):
         if not self.driver:
