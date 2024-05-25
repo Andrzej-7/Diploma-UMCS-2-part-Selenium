@@ -4,6 +4,7 @@ import string
 import time
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QMessageBox
 from selenium import webdriver
+from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
@@ -30,23 +31,28 @@ def email_generator():
     return email
 
 
-def password_generator(length, include_special_chars):
-    lower = string.ascii_lowercase
-    upper = string.ascii_uppercase
-    digits = string.digits
-    special_chars = string.punctuation if include_special_chars else ''
+def password_generator(length, include_special_chars, simple_password):
 
-    all_chars = lower + upper + digits + special_chars
+    easy_password = "11111"
+    if not simple_password:
+        lower = string.ascii_lowercase
+        upper = string.ascii_uppercase
+        digits = string.digits
+        special_chars = string.punctuation if include_special_chars else ''
 
-    password = random.choice(lower) + random.choice(upper) + random.choice(digits)
-    if include_special_chars:
-        password += random.choice(special_chars)
+        all_chars = lower + upper + digits + special_chars
 
-    password += ''.join(random.choice(all_chars) for _ in range(length - len(password)))
+        password = random.choice(lower) + random.choice(upper) + random.choice(digits)
+        if include_special_chars:
+            password += random.choice(special_chars)
 
-    password = ''.join(random.sample(password, len(password)))
+        password += ''.join(random.choice(all_chars) for _ in range(length - len(password)))
 
-    return password
+        password = ''.join(random.sample(password, len(password)))
+
+        return password
+    else:
+        return easy_password
 
 
 def wallet_generator(length, include_special_chars, crypto_option):
@@ -61,7 +67,7 @@ def wallet_generator(length, include_special_chars, crypto_option):
     return wallet
 
 
-def register_user(driver, username, password_length=12, include_special_chars=True):
+def register_user(driver, username, password):
     driver.get("http://127.0.0.1:8000/register/")
     time.sleep(1)
     username_element = driver.find_element(By.XPATH, '//*[@id="id_username"]')
@@ -74,7 +80,6 @@ def register_user(driver, username, password_length=12, include_special_chars=Tr
 
     time.sleep(1)
     password_element1 = driver.find_element(By.XPATH, '//*[@id="id_password1"]')
-    password = password_generator(password_length, include_special_chars)
     password_element1.send_keys(password)
 
     time.sleep(1)
@@ -91,7 +96,8 @@ def register_user(driver, username, password_length=12, include_special_chars=Tr
 def account_logOut(driver):
     headerEmail = driver.find_element(By.XPATH, '/html/body/header/div/div/div/button')
     actions = ActionChains(driver)
-    # kursor na headerEmail
+
+    #kursor na headerEmail
     actions.move_to_element(headerEmail).perform()
 
     time.sleep(1)
@@ -107,22 +113,36 @@ def go_to_main_page(driver):
 
 
 
-def cancel_order(driver):
-    cancel_order_button = driver.find_element(By.XPATH, '/html/body/div/div[2]/form/div/a')
-    cancel_order_button.click()
+def cancel_order(driver, self=None):
+    try:
+        cancel_order_button = driver.find_element(By.XPATH, '/html/body/div/div[2]/form/div/a')
+        driver.execute_script("arguments[0].scrollIntoView();", cancel_order_button)
+        cancel_order_button.click()
+    except NoSuchElementException:
+        print("Button not found")
+    except Exception as e:
+        QMessageBox.warning(self, 'Error', 'Button not found')
 
 
-def i_payed_order(driver):
-    i_payed_order_button = driver.find_element(By.XPATH, '//*[@id="processOrderButton"]')
-    i_payed_order_button.click()
+
+def i_payed_order(driver, self=None):
+    try:
+        i_payed_order_button = driver.find_element(By.XPATH, '//*[@id="processOrderButton"]')
+        driver.execute_script("arguments[0].scrollIntoView();", i_payed_order_button)
+        i_payed_order_button.click()
+    except NoSuchElementException:
+        print("Button not found")
+    except Exception as e:
+        QMessageBox.warning(self, 'Error', 'Button not found')
+
 
 
 
 
 def account_login(driver, Account):
     for username, password in Account.items():
-        login_header_button = driver.find_element(By.XPATH, '//*[@id="login-button"]')
-        login_header_button.click()
+
+        driver.get("http://127.0.0.1:8000/login/")
         time.sleep(0.5)
 
         username_field = driver.find_element(By.XPATH, '//*[@id="id_username"]')
@@ -233,7 +253,7 @@ class SeleniumTestGUI(QWidget):
 
     def initUI(self):
         self.setWindowTitle('Selenium Test GUI')
-        self.setGeometry(100, 100, 600, 300)
+        self.setGeometry(100, 100, 800, 300)
 
         mainLayout = QVBoxLayout()
         self.setStyleSheet("background-color: #E0F7FA;")
@@ -274,7 +294,9 @@ class SeleniumTestGUI(QWidget):
         registrationLayout.addWidget(self.testCaseLabel)
         self.testCaseCombo = QComboBox()
         self.testCaseCombo.addItems(
-            ['Short Password', 'Simple Password', 'Already Used Username', 'Username Similar to Password', 'Good Case'])
+            ['Good Case', 'Short Password',
+             'Simple Password', 'Already Used Username',
+             'Username Similar to Password'])
         registrationLayout.addWidget(self.testCaseCombo)
 
         self.registerButton = QPushButton('Run Registration Test')
@@ -403,9 +425,10 @@ class SeleniumTestGUI(QWidget):
         elif test_case == 'Username Similar to Password':
             self.testUsernameSimilarToPassword()
         elif test_case == 'Good Case':
-            self.testGoodCase()
+            self.testGoodCase_registation()
 
     def handleLogin(self):
+
         if not self.driver:
             QMessageBox.warning(self, 'Error', 'Please start a browser first.')
             return
@@ -415,6 +438,8 @@ class SeleniumTestGUI(QWidget):
             self.goodCaseLogin()
         elif login_case == 'Incorrect Login/Pass':
             self.incorrectLogin()
+
+
 
     def handleCreateOrder(self):
         if not self.driver:
@@ -435,29 +460,39 @@ class SeleniumTestGUI(QWidget):
 
     def testShortPassword(self):
         username = username_generator()
-        register_user(self.driver, username, 4, True)
+        password = password_generator(4, True, False)
+        register_user(self.driver, username,password)
 
     def testSimplePassword(self):
-        pass
-
-    def testAlreadyUsedUsername(self):
-        time.sleep(1)
-        username = "test12"
-        register_user(self.driver, username, 12, True)
+        username = username_generator()
+        password = "12345678"
+        print(password)
+        register_user(self.driver, username, password)
 
     def testUsernameSimilarToPassword(self):
-        pass
+        username = "banan782cccc"
+        password = 'banan782cccc'
+        register_user(self.driver, username, password)
 
-    def testGoodCase(self):
-        time.sleep(1)
+
+    def testAlreadyUsedUsername(self):
+        username = "test12"
+        password = password_generator(12, True, False)
+        register_user(self.driver, username, password)
+
+
+    def testGoodCase_registation(self):
         self.username = username_generator()
-        self.username, self.password = register_user(self.driver, self.username, 12, True)
+        password = password_generator(12, True, False)
+        self.username, self.password = register_user(self.driver, self.username, password)
 
     def goodCaseLogin(self):
         time.sleep(1)
-        Account = {self.username: self.password}
-        # print(Account)
+        username = "orels"
+        password = "12345"
+        Account = {username: password}
         account_login(self.driver, Account)
+
 
     def incorrectLogin(self):
         time.sleep(1)
@@ -478,11 +513,9 @@ class SeleniumTestGUI(QWidget):
     def create_orderCase4(self):
         create_exchange_order(self.driver, 17, False, "USDT", "USDT", True)
 
-
+        #user agreement not confirmed
     def create_orderCase5(self):
         create_exchange_order(self.driver, 17, False, "XMR", "USDT", False)
-
-
 
 
 
