@@ -547,7 +547,7 @@ class SeleniumTestGUI(QWidget):
 
 
     def testAlreadyUsedUsername(self):
-        username = "test12"
+        username = "adminUMCS"
         password = password_generator(12, True, False)
         register_user(self.driver, username, password)
 
@@ -562,7 +562,7 @@ class SeleniumTestGUI(QWidget):
 
     def goodCaseLogin(self):
         time.sleep(1)
-        username = "orels"
+        username = "adminUMCS"
         password = "12345"
         Account = {username: password}
         account_login(self.driver, Account)
@@ -593,9 +593,13 @@ class SeleniumTestGUI(QWidget):
 
 
 #to close browser when gui closed
-    def closeEvent(self, event):
+    def closeBrowser(self):
         if self.driver:
             self.driver.quit()
+            self.driver = None
+
+    def closeEvent(self, event):
+        self.closeBrowser()
         event.accept()
 
 
