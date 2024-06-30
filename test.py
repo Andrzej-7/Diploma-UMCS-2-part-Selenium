@@ -4,12 +4,20 @@ import string
 import time
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QMessageBox
 from selenium import webdriver
-from selenium.common import NoSuchElementException
+from selenium.common import NoSuchElementException, ElementNotInteractableException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
 from PyQt5.QtWidgets import QFrame
 from PyQt5.QtCore import Qt
+
+
+#links
+main_page_link = 'http://localhost:8000'
+login_page_link = 'http://localhost:8000/login/'
+register_page_link = 'http://localhost:8000/register/'
+create_EO_link = 'http://localhost:8000/create_exchange_order/'
+
+
 
 
 def username_generator():
@@ -68,179 +76,224 @@ def wallet_generator(length, include_special_chars, crypto_option):
 
 
 def register_user(driver, username, password):
-    driver.get("http://127.0.0.1:8000/register/")
-    time.sleep(1)
-    username_element = driver.find_element(By.XPATH, '//*[@id="id_username"]')
-    username_element.send_keys(username)
+    try:
+        driver.get(register_page_link)
 
-    time.sleep(1)
-    email_element = driver.find_element(By.XPATH, '//*[@id="id_email"]')
-    email = email_generator()
-    email_element.send_keys(email)
+        time.sleep(1)
+        username_element = driver.find_element(By.XPATH, '//*[@id="id_username"]')
+        username_element.send_keys(username)
 
-    time.sleep(1)
-    password_element1 = driver.find_element(By.XPATH, '//*[@id="id_password1"]')
-    password_element1.send_keys(password)
+        time.sleep(1)
+        email_element = driver.find_element(By.XPATH, '//*[@id="id_email"]')
+        email = email_generator()
+        email_element.send_keys(email)
 
-    time.sleep(1)
-    password_element2 = driver.find_element(By.XPATH, '//*[@id="id_password2"]')
-    password_element2.send_keys(password)
+        time.sleep(1)
+        password_element1 = driver.find_element(By.XPATH, '//*[@id="id_password1"]')
+        password_element1.send_keys(password)
 
-    time.sleep(1)
-    register_button = driver.find_element(By.XPATH, '/html/body/div/form/div[5]/button')
-    register_button.send_keys(Keys.ENTER)
+        time.sleep(1)
+        password_element2 = driver.find_element(By.XPATH, '//*[@id="id_password2"]')
+        password_element2.send_keys(password)
 
-    return username, password
+        time.sleep(1)
+        register_button = driver.find_element(By.XPATH, '/html/body/div/form/div[5]/button')
+        register_button.send_keys(Keys.ENTER)
+
+        return username, password
+    except NoSuchElementException as e:
+        print("element not found")
+        return None, None
+    except ElementNotInteractableException as e:
+        print("element not interactable")
+        return None, None
+    except Exception as e:
+        QMessageBox.warning(None, 'Error', 'Registration failed: ' + str(e))
+        return None, None
+
+
 
 
 def account_logOut(driver):
-    headerEmail = driver.find_element(By.XPATH, '/html/body/header/div/div/div/button')
-    actions = ActionChains(driver)
+        try:
+            headerEmail = driver.find_element(By.XPATH, '/html/body/header/div/div/div/button')
+            driver.execute_script("arguments[0].scrollIntoView(true);", headerEmail)
+            #js FIND SCROLL and CLICK functions, because of strange error in selenium implementation version
+            driver.execute_script("arguments[0].click();", headerEmail)
+            time.sleep(0.5)
+            logOutButton = driver.find_element(By.XPATH, '/html/body/header/div/div/div/div/a')
+            driver.execute_script("arguments[0].scrollIntoView(true);", logOutButton)
+            driver.execute_script("arguments[0].click();", logOutButton)
 
-    #kursor na headerEmail
-    actions.move_to_element(headerEmail).perform()
-
-    time.sleep(1)
-    logOutButton = driver.find_element(By.XPATH, '/html/body/header/div/div/div/div/a[2]')
-    logOutButton.click()
+        except NoSuchElementException:
+            print("Button not found")
+        except Exception as e:
+            QMessageBox.warning(None, 'Error', 'log out  failed: ' + str(e))
 
 
 
 
 def go_to_main_page(driver):
-    #mainpageElement = driver.find_element(By.XPATH, '')
-    driver.get("http://127.0.0.1:8000")
+    driver.get(main_page_link)
 
 
 
-def cancel_order(driver, self=None):
+def cancel_order(driver):
     try:
         cancel_order_button = driver.find_element(By.XPATH, '/html/body/div/div[2]/form/div/a')
         driver.execute_script("arguments[0].scrollIntoView();", cancel_order_button)
         cancel_order_button.click()
     except NoSuchElementException:
         print("Button not found")
+    except ElementNotInteractableException:
+        print("Button is not interactable")
     except Exception as e:
-        QMessageBox.warning(self, 'Error', 'Button not found')
+        QMessageBox.warning(None, 'Error', 'Cancel Order failed: ' + str(e))
 
 
 
-def i_payed_order(driver, self=None):
+def i_payed_order(driver):
     try:
         i_payed_order_button = driver.find_element(By.XPATH, '//*[@id="processOrderButton"]')
         driver.execute_script("arguments[0].scrollIntoView();", i_payed_order_button)
         i_payed_order_button.click()
     except NoSuchElementException:
         print("Button not found")
+    except ElementNotInteractableException:
+        print("Button is not interactable")
     except Exception as e:
-        QMessageBox.warning(self, 'Error', 'Button not found')
+        QMessageBox.warning(None, 'Error', 'Payment processing failed: ' + str(e))
+
 
 
 
 
 
 def account_login(driver, Account):
-    for username, password in Account.items():
+    try:
+        for username, password in Account.items():
 
-        driver.get("http://127.0.0.1:8000/login/")
-        time.sleep(0.5)
+            driver.get(login_page_link)
+            time.sleep(0.5)
 
-        username_field = driver.find_element(By.XPATH, '//*[@id="id_username"]')
-        username_field.send_keys(username)
+            username_field = driver.find_element(By.XPATH, '//*[@id="id_username"]')
+            username_field.send_keys(username)
 
-        time.sleep(0.5)
-        password_field = driver.find_element(By.XPATH, '//*[@id="id_password"]')
-        password_field.send_keys(password)
+            time.sleep(0.5)
+            password_field = driver.find_element(By.XPATH, '//*[@id="id_password"]')
+            password_field.send_keys(password)
 
-        time.sleep(0.5)
-        login_button = driver.find_element(By.XPATH, '/html/body/div/form/div[3]/button')
-        login_button.click()
+            time.sleep(0.5)
+            login_button = driver.find_element(By.XPATH, '/html/body/div/form/div[3]/button')
+            login_button.click()
+
+    except NoSuchElementException as e:
+        print("element not found")
+        return None, None
+    except ElementNotInteractableException as e:
+        print("element not interactable")
+        return None, None
+    except Exception as e:
+        QMessageBox.warning(None, 'Error', 'login failed: ' + str(e))
+        return None, None
 
 
 def create_exchange_order(driver, wallet_length, special_chars_in_wallet,  crypto_from, crypto_to, agreement):
-    driver.get("http://localhost:8000/create_exchange_order/")
-    time.sleep(1)
-    email_field = driver.find_element(By.XPATH, '//*[@id="id_email"]')
-    email = email_generator()
-    email_field.send_keys(email)
-
-    crypto_from_xpath = " "
-
-    if crypto_from == "BTC":
-        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[1]'
-    elif crypto_from == "ETH":
-        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[2]'
-    elif crypto_from == "XMR":
-        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[3]'
-    elif crypto_from == "DAI":
-        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[4]'
-    elif crypto_from == "BNB":
-        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[5]'
-    elif crypto_from == "USDT":
-        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[6]'
-    elif crypto_from == "LTC":
-        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[7]'
-    elif crypto_from == "XLM":
-        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[8]'
-    elif crypto_from == "ADA":
-        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[9]'
-    elif crypto_from == "XRP":
-        crypto_from_xpath = '/html/body/div/form/div[3]/select/option[10]'
+    try:
+        driver.get(create_EO_link)
 
 
-    time.sleep(0.5)
-    crypto_from_field = driver.find_element(By.XPATH, crypto_from_xpath)
-    crypto_from_field.click()
+        time.sleep(1)
+        email_field = driver.find_element(By.XPATH, '//*[@id="id_email"]')
+        email = email_generator()
+        email_field.send_keys(email)
 
-    amount_field = driver.find_element(By.XPATH, '//*[@id="id_amount"]')
-    amount_field.send_keys(random.randint(10, 100))
-    time.sleep(0.5)
+        crypto_from_xpath = " "
 
-    crypto_to_xpath = " "
-
-    if crypto_to == "BTC":
-        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[1]'
-    elif crypto_to == "ETH":
-        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[2]'
-    elif crypto_to == "XMR":
-        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[3]'
-    elif crypto_to == "DAI":
-        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[4]'
-    elif crypto_to == "BNB":
-        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[5]'
-    elif crypto_to == "USDT":
-        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[6]'
-    elif crypto_to == "LTC":
-        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[7]'
-    elif crypto_to == "XLM":
-        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[8]'
-    elif crypto_to == "ADA":
-        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[9]'
-    elif crypto_to == "XRP":
-        crypto_to_xpath = '/html/body/div/form/div[5]/select/option[10]'
-
-    crypto_to_field = driver.find_element(By.XPATH, crypto_to_xpath)
-    crypto_to_field.click()
-    time.sleep(0.5)
+        if crypto_from == "BTC":
+            crypto_from_xpath = '/html/body/div/form/div[3]/select/option[1]'
+        elif crypto_from == "ETH":
+            crypto_from_xpath = '/html/body/div/form/div[3]/select/option[2]'
+        elif crypto_from == "XMR":
+            crypto_from_xpath = '/html/body/div/form/div[3]/select/option[3]'
+        elif crypto_from == "DAI":
+            crypto_from_xpath = '/html/body/div/form/div[3]/select/option[4]'
+        elif crypto_from == "BNB":
+            crypto_from_xpath = '/html/body/div/form/div[3]/select/option[5]'
+        elif crypto_from == "USDT":
+            crypto_from_xpath = '/html/body/div/form/div[3]/select/option[6]'
+        elif crypto_from == "LTC":
+            crypto_from_xpath = '/html/body/div/form/div[3]/select/option[7]'
+        elif crypto_from == "XLM":
+            crypto_from_xpath = '/html/body/div/form/div[3]/select/option[8]'
+        elif crypto_from == "ADA":
+            crypto_from_xpath = '/html/body/div/form/div[3]/select/option[9]'
+        elif crypto_from == "XRP":
+            crypto_from_xpath = '/html/body/div/form/div[3]/select/option[10]'
 
 
-    wallet = wallet_generator(wallet_length, special_chars_in_wallet, crypto_to)
+        time.sleep(0.5)
+        crypto_from_field = driver.find_element(By.XPATH, crypto_from_xpath)
+        crypto_from_field.click()
 
+        amount_field = driver.find_element(By.XPATH, '//*[@id="id_amount"]')
+        amount_field.send_keys(random.randint(10, 100))
+        time.sleep(0.5)
 
-    wallet_field = driver.find_element(By.XPATH, '//*[@id="id_recipient_wallet"]')
-    wallet_field.send_keys(wallet)
-    time.sleep(0.5)
+        crypto_to_xpath = " "
 
+        if crypto_to == "BTC":
+            crypto_to_xpath = '/html/body/div/form/div[5]/select/option[1]'
+        elif crypto_to == "ETH":
+            crypto_to_xpath = '/html/body/div/form/div[5]/select/option[2]'
+        elif crypto_to == "XMR":
+            crypto_to_xpath = '/html/body/div/form/div[5]/select/option[3]'
+        elif crypto_to == "DAI":
+            crypto_to_xpath = '/html/body/div/form/div[5]/select/option[4]'
+        elif crypto_to == "BNB":
+            crypto_to_xpath = '/html/body/div/form/div[5]/select/option[5]'
+        elif crypto_to == "USDT":
+            crypto_to_xpath = '/html/body/div/form/div[5]/select/option[6]'
+        elif crypto_to == "LTC":
+            crypto_to_xpath = '/html/body/div/form/div[5]/select/option[7]'
+        elif crypto_to == "XLM":
+            crypto_to_xpath = '/html/body/div/form/div[5]/select/option[8]'
+        elif crypto_to == "ADA":
+            crypto_to_xpath = '/html/body/div/form/div[5]/select/option[9]'
+        elif crypto_to == "XRP":
+            crypto_to_xpath = '/html/body/div/form/div[5]/select/option[10]'
 
-    if agreement:
-        agreement_field = driver.find_element(By.XPATH, '//*[@id="agreementCheckbox"]')
-        agreement_field.click()
+        crypto_to_field = driver.find_element(By.XPATH, crypto_to_xpath)
+        crypto_to_field.click()
         time.sleep(0.5)
 
 
-    exchange_now_button = driver.find_element(By.XPATH, '//*[@id="submitBtn"]')
-    exchange_now_button.click()
+        wallet = wallet_generator(wallet_length, special_chars_in_wallet, crypto_to)
 
+
+        wallet_field = driver.find_element(By.XPATH, '//*[@id="id_recipient_wallet"]')
+        wallet_field.send_keys(wallet)
+        time.sleep(0.5)
+
+
+        if agreement:
+            agreement_field = driver.find_element(By.XPATH, '//*[@id="agreementCheckbox"]')
+            agreement_field.click()
+            time.sleep(0.5)
+
+
+        exchange_now_button = driver.find_element(By.XPATH, '//*[@id="submitBtn"]')
+        exchange_now_button.click()
+
+    except NoSuchElementException:
+        print("Button not found")
+        return None, None
+    except ElementNotInteractableException:
+        print("Button is not interactable")
+        return None, None
+    except Exception as e:
+        QMessageBox.warning(None, 'Error', 'Payment processing failed: ' + str(e))
+        return None, None
 
 
 
@@ -258,7 +311,7 @@ class SeleniumTestGUI(QWidget):
         mainLayout = QVBoxLayout()
         self.setStyleSheet("background-color: #E0F7FA;")
 
-        # Label
+        #label
         browserTitleLabel = QLabel('Browser')
         browserTitleLabel.setStyleSheet("font-size: 15px; font-weight: bold; color: #00796B; padding: 10px 0;")
         browserTitleLabel.setAlignment(Qt.AlignCenter)
@@ -277,7 +330,7 @@ class SeleniumTestGUI(QWidget):
         self.startBrowserButton.clicked.connect(self.startBrowser)
         mainLayout.addWidget(self.startBrowserButton)
 
-        #Separator line ---------------------------
+        #separator line ---------------------------
         hLine = QFrame()
         hLine.setFrameShape(QFrame.HLine)
         hLine.setStyleSheet("border: 2px solid #B2EBF2;")
@@ -288,7 +341,7 @@ class SeleniumTestGUI(QWidget):
         browserTitleLabel.setAlignment(Qt.AlignCenter)
         mainLayout.addWidget(browserTitleLabel)
 
-        #Registration Test Case
+        #registration test case
         registrationLayout = QHBoxLayout()
         self.testCaseLabel = QLabel('Choose Registration Test Case:')
         registrationLayout.addWidget(self.testCaseLabel)
@@ -306,7 +359,7 @@ class SeleniumTestGUI(QWidget):
 
         mainLayout.addLayout(registrationLayout)
 
-        #Login Test Case
+        #login test case
         loginLayout = QHBoxLayout()
         self.loginCaseLabel = QLabel('Choose Login Test Case:')
         loginLayout.addWidget(self.loginCaseLabel)
@@ -321,7 +374,7 @@ class SeleniumTestGUI(QWidget):
 
         mainLayout.addLayout(loginLayout)
 
-        #Create Order Test Case
+        #create order test case
         orderLayout = QHBoxLayout()
         self.orderCaseLabel = QLabel('Choose Create Order Test Case:')
         orderLayout.addWidget(self.orderCaseLabel)
@@ -339,7 +392,7 @@ class SeleniumTestGUI(QWidget):
 
         mainLayout.addLayout(orderLayout)
 
-        # Separator line ---------------------------
+        #separator line ---------------------------
         hLine = QFrame()
         hLine.setFrameShape(QFrame.HLine)
         hLine.setStyleSheet("border: 2px solid #B2EBF2;")
@@ -377,9 +430,12 @@ class SeleniumTestGUI(QWidget):
 
 
 
-
-
     def startBrowser(self):
+
+        if self.driver:
+            QMessageBox.warning(self, 'Error', 'A browser is already running')
+            return
+
         browser_choice = self.browserCombo.currentText()
         if browser_choice == 'Firefox':
             self.driver = webdriver.Firefox()
@@ -391,24 +447,38 @@ class SeleniumTestGUI(QWidget):
             QMessageBox.warning(self, 'Error', 'Unsupported browser!')
         QMessageBox.information(self, 'Browser Started', f'{browser_choice} browser has been started.')
 
+
+
     def logOut(self):
         if self.driver:
             try:
                 account_logOut(self.driver)
             except Exception as e:
+                print(f"Log Out error: {e}")
                 QMessageBox.warning(self, 'Error', 'Log Out Failed: ' + str(e))
 
 
     def iPayed(self):
-        i_payed_order(self.driver)
-
+        if self.driver:
+            try:
+                i_payed_order(self.driver)
+            except Exception as e:
+                QMessageBox.warning(self, 'Error', 'Payment Processing failed: ' + str(e))
 
     def cancelOrder(self):
-        cancel_order(self.driver)
+        if self.driver:
+            try:
+                cancel_order(self.driver)
+            except Exception as e:
+                QMessageBox.warning(self, 'Error', 'Cancel Order failed: ' + str(e))
 
 
     def mainPage(self):
-        go_to_main_page(self.driver)
+        if self.driver:
+            try:
+                go_to_main_page(self.driver)
+            except Exception as e:
+                QMessageBox.warning(self, 'Error', 'navigate to main page failed: ' + str(e))
 
 
     def handleRegistration(self):
@@ -427,8 +497,8 @@ class SeleniumTestGUI(QWidget):
         elif test_case == 'Good Case':
             self.testGoodCase_registation()
 
-    def handleLogin(self):
 
+    def handleLogin(self):
         if not self.driver:
             QMessageBox.warning(self, 'Error', 'Please start a browser first.')
             return
@@ -454,10 +524,12 @@ class SeleniumTestGUI(QWidget):
         elif create_order_case == 'Too Short Wallet Address':
             self.too_short_wallet()
         elif create_order_case == "Crypto From & Crypto To is same":
-            self.create_orderCase4()
+            self.crypto_choises_same()
         elif create_order_case == "User agreement not confirmed":
-            self.create_orderCase5()
+            self.user_agr_not_conf()
 
+
+#registration tests
     def testShortPassword(self):
         username = username_generator()
         password = password_generator(4, True, False)
@@ -466,7 +538,6 @@ class SeleniumTestGUI(QWidget):
     def testSimplePassword(self):
         username = username_generator()
         password = "12345678"
-        print(password)
         register_user(self.driver, username, password)
 
     def testUsernameSimilarToPassword(self):
@@ -480,11 +551,14 @@ class SeleniumTestGUI(QWidget):
         password = password_generator(12, True, False)
         register_user(self.driver, username, password)
 
-
     def testGoodCase_registation(self):
         self.username = username_generator()
         password = password_generator(12, True, False)
         self.username, self.password = register_user(self.driver, self.username, password)
+
+
+
+#login tests
 
     def goodCaseLogin(self):
         time.sleep(1)
@@ -499,26 +573,30 @@ class SeleniumTestGUI(QWidget):
         Account = {"error": "error"}
         account_login(self.driver, Account)
 
+
+
+#create order tests
     def createOrderGoodCase(self):
         create_exchange_order(self.driver, 17, False, "BTC", "USDT", True)
 
-        #wallet bad cases
     def include_special_chars(self):
         create_exchange_order(self.driver, 17, True, "BTC", "USDT", True)
 
     def too_short_wallet(self):
         create_exchange_order(self.driver, 8, True, "BTC", "USDT", True)
 
-        #crypro_to is same to crypto_from
-    def create_orderCase4(self):
+    def crypto_choises_same(self):
         create_exchange_order(self.driver, 17, False, "USDT", "USDT", True)
 
-        #user agreement not confirmed
-    def create_orderCase5(self):
+    def user_agr_not_conf(self):
         create_exchange_order(self.driver, 17, False, "XMR", "USDT", False)
 
 
-
+#to close browser when gui closed
+    def closeEvent(self, event):
+        if self.driver:
+            self.driver.quit()
+        event.accept()
 
 
 if __name__ == '__main__':
